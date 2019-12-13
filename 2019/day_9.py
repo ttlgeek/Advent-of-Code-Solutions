@@ -12,7 +12,7 @@ def multiply(inputs, param1, param2, param3):
 
 
 def echoValue(inputs, value):
-    print("Echoed: {}".format(value))
+    # print("Echoed: {}".format(value))
     return value
 
 
@@ -78,22 +78,23 @@ def getParams(inputs, instruction, i, relativeOffset=0):
         return opCode, param1, param2, False
 
 
-def intCodeProgram(inputs, args, startIndex=0, haltAtOutput=False):
+def intCodeProgram(
+    inputs, args, startIndex=0, haltAtOutput=False, outputSize=1, startRelativeBase=0
+):
     values = defaultdict(int)
     for i in range(len(inputs)):
         values[i] = inputs[i]
 
     i = startIndex
     argIndex = 0
-    lastEchoed = 0
-    relativeBase = 0
+    echoed = []
+    relativeBase = startRelativeBase
     while True:
         instruction = addPaddingToOpCode(values[i])
         opCode = int(instruction[-1])
         opCode, param1, param2, param3 = getParams(values, instruction, i, relativeBase)
-
         if opCode == 99:
-            return -1, lastEchoed, values
+            return -1, echoed, values, -1
         if opCode == 1:
             add(values, param1, param2, param3)
             i += 4
@@ -103,13 +104,13 @@ def intCodeProgram(inputs, args, startIndex=0, haltAtOutput=False):
         elif opCode == 3:
             inputValue = args[argIndex]
             values[param1] = inputValue
-            argIndex = (argIndex + 1) % len(args)
+            argIndex = argIndex + 1
             i += 2
         elif opCode == 4:
-            lastEchoed = echoValue(values, param1)
+            echoed.append(echoValue(values, param1))
             i += 2
-            if haltAtOutput:
-                return i, lastEchoed, values
+            if haltAtOutput and len(echoed) == outputSize:
+                return i, echoed, values, relativeBase
         elif opCode == 5:
             shouldJump = jumpIfTrue(param1)
             if shouldJump:
@@ -134,12 +135,12 @@ def intCodeProgram(inputs, args, startIndex=0, haltAtOutput=False):
 
 
 def part1(inputs):
-    _, output, _ = intCodeProgram(inputs, [1])
+    _, output, _, _ = intCodeProgram(inputs, [1])
 
-    return "BOOST keycode: {}".format(output)
+    return "BOOST keycode: {}".format(output[0])
 
 
 def part2(inputs):
-    _, output, _ = intCodeProgram(inputs, [2])
+    _, output, _, _ = intCodeProgram(inputs, [2])
 
-    return "Distress signal coordinates: {}".format(output)
+    return "Distress signal coordinates: {}".format(output[0])
